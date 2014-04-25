@@ -16,6 +16,47 @@
 *
 */
 
+//--------Configuration Start----------
+//This is the Keypad id of the Arduinio - recommended 1 or 2 (0 is first keypad)
+#define RKP_ID 1
+
+//change this to your email address - Or comment out to Not send emails at all
+#define sEmail "ozmo@example.com"	
+
+//The Arduino IP address and Port (192.168.1.205:8383)
+#define IP_A 192
+#define IP_B 168
+#define IP_C 1
+#define IP_D 205
+
+//eg. this is the IP for "smtp.upcmail.ie" (will only work if you are a UPC customer)
+#define SMTP_IP_A 213
+#define SMTP_IP_B 46
+#define SMTP_IP_C 255
+#define SMTP_IP_D 2
+
+
+/*---To Send emails You NEED get the IP address of the SMTP server from the list below that matches your Internet Provider
+  No DNS lookup as Ive removed that from my libs to save space...
+
+smtp.mysmart.ie							Smart Telecom Outgoing SMTP Server
+smtp.irishbroadband.ie.					Irish Broadband Outgoing SMTP Server
+mail1.eircom.net OR mail2.eircom.net	Eircom Outgoing SMTP Server
+smtp.magnet.ie							Magnet Outgoing SMTP Server
+smtp.upcmail.ie							NTL and UPC Outgoing SMTP Server
+mail.icecomms.net						Ice Broadband Outgoing SMTP Server
+mail.vodafone.ie						Vodafone Outgoing SMTP Server
+smtp.o2.ie								O2 Outgoing SMTP Server
+smtp.clearwire.ie / mail.clearwire.ie	Clearwire Outgoing SMTP Server
+smtp.digiweb.ie							Digiweb Outgoing SMTP Server
+mail.imagine.ie OR mail.gaelic.ie		Imagine Broadband Outgoing SMTP Server
+mail.perlico.ie							Perlico Outgoing SMTP Server
+mail-relay.3ireland.ie					3 Outgoing SMTP Server: Mobile broadband with 3 mobile Ireland
+*/
+
+
+//--------Configuration End----------
+
 #ifdef AtmelStudio
   #include <Arduino.h>
   #include "RKP.h"
@@ -30,7 +71,7 @@
   #include <sha1.h>
   #include <SMTP.h>
   #include <WebSocket.h>
-  
+
   #include <SPI.h>
   #include <Ethernet.h>
   #include <EthernetClient.h>
@@ -38,120 +79,46 @@
   #include <util.h>
 #endif
 
-//Build Version (displayed on webpage)
-const String sVersion="V2.0";
-
+//Workaround if needed for http://gcc.gnu.org/bugzilla/show_bug.cgi?id=34734
 #ifdef PROGMEM
 #undef PROGMEM
 #define PROGMEM __attribute__((section(".progmem.data")))
 #endif
 
-//change network settings to yours
-//--------Configuration Start----------
-
-
 //Flashing Led we can use to show activity
-int ledFeedback = 13;
+int ledFeedback = 12;
 int ledFeedbackState = HIGH;
 int tiFlip = 0;
 int tiLast = 0;
 
 
-
-
-
-//Allows us to see home much ram we have left to play with
-//static int freeRam () {extern int __heap_start, *__brkval;int v;return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);}
-//#include <MemoryFree.h>
-
-extern unsigned int __data_start;
-extern unsigned int __data_end;
-extern unsigned int __bss_start;
-extern unsigned int __bss_end;
-extern unsigned int __heap_start;
-extern void *__brkval;
-int16_t ramSize=0;   // total amount of ram available for partitioning
-int16_t dataSize=0;  // partition size for .data section
-int16_t bssSize=0;   // partition size for .bss section
-int16_t heapSize=0;  // partition size for current snapshot of the heap section
-int16_t stackSize=0; // partition size for current snapshot of the stack section
-int16_t freeMem1=0;  // available ram calculation #1
-int16_t freeMem2=0;  // available ram calculation #2
-
-//* This function places the current value of the heap and stack pointers in the
-// * variables. You can call it from any place in your code and save the data for
-// * outputting or displaying later. This allows you to check at different parts of
-// * your program flow.
-// * The stack pointer starts at the top of RAM and grows downwards. The heap pointer
-// * starts just above the static variables etc. and grows upwards. SP should always
-// * be larger than HP or you'll be in big trouble! The smaller the gap, the more
-// * careful you need to be. Julian Gall 6-Feb-2009.
-// *
-uint8_t *heapptr, *stackptr;
-//uint16_t diff=0;
-void check_mem() {
-  stackptr = (uint8_t *)malloc(4);          // use stackptr temporarily
-  heapptr = stackptr;                     // save value of heap pointer
-  free(stackptr);      // free up the memory again (sets stackptr to 0)
-  stackptr =  (uint8_t *)(SP);           // save value of stack pointer
-}
-	
-void memrep()                     // run over and over again
-{
-	
-	Log("\r\n--------------------------------------------\r\n");
-	Log("Freemem: "); Log(freeRam()); Log(" (bytes)\r\n");
-	//Log(" which must be > 0 for no heap/stack collision. SP should always be larger than HP or you'll be in big trouble!");
-	check_mem();
-	Log("\r\nheapptr=[0x"); Log2( (int) heapptr, HEX); Log("]UP ");
-	Log("  stackptr=[0x"); Log2( (int) stackptr, HEX); Log("]DWN "); // (growing downward, Log2( (int) stackptr, DEC); Log(" decimal)");
-	Log("  sp-hp=[");Log2((int) (stackptr-heapptr), DEC); LogLn("]bytes\r\n");  //heapptr need be +ve
-	//Log("Freemem:"); LogLn(freeRam()); Log("]\r\n");
-	//Log("] (bytes) which must be > 0 for no heap/stack collision");
-	// ---------------- Print memory profile -----------------
-	Log("data_start=0x"); Log2( (int) &__data_start, HEX );	Log("   data_end=0x"); Log2((int) &__data_end, HEX );
-	Log("   bss_start=0x"); Log2((int) & __bss_start, HEX ); Log("   bss_end=0x"); Log2( (int) &__bss_end, HEX ); 
-	Log("\r\nheap_start=0x"); Log2( (int) &__heap_start, HEX ); Log("   malloc_heap_start=0x"); Log2( (int) __malloc_heap_start, HEX ); 
-	Log("   malloc_margin=0x"); Log2( (int) &__malloc_margin, HEX ); Log("   brkval=0x"); Log2( (int) __brkval, HEX ); 
-	Log("\r\nSP=0x"); Log2( (int) SP, HEX ); Log("   RAMEND=0x"); Log2( (int) RAMEND, HEX ); 
-
-	// summaries:
-	Log("\r\nSizes In Dec Bytes\r\n");
-	Log("ram  =["); Log2( (int)RAMEND - (int)&__data_start, DEC); Log("] ");
-	Log(".data=["); Log2( (int)&__data_end-(int) &__data_start, DEC ); Log("] ");
-	Log(".bss =["); Log2( (int) &__bss_end - (int) &__bss_start, DEC ); Log("]\r\n");
-	Log("heap =["); Log2( (int) __brkval - (int) &__heap_start, DEC ); Log("] ");
-	Log("stack=["); Log2( (int) RAMEND - (int) SP, DEC ); Log("] ");
-	Log("free =["); Log2( (int) SP - (int) __brkval, DEC ); Log("] ");
-	Log("free =["); Log2( ramSize - stackSize - heapSize - bssSize - dataSize, DEC ); Log("]\r\n");
-	LogLn("-----");
-	/**/
-}
-
 void setup()
 {
 	Log_Init();
 	
-	RKPClass::Init();
+	RKPClass::Init(RKP_ID);
 	
-	LogLn("");
-	LogLn("-----[Start]-----");
-	WebSocket::WebSocket_EtherInit();
+	LogLn(F("\r\n-----[Start]-----"));
+	WebSocket::WebSocket_EtherInit(
+		IPAddress( IP_A, IP_B, IP_C, IP_D ),	//Give the device a unique IP
+		IPAddress( IP_A, IP_B, IP_C, 1 )				//Gateway (your Router)
+	);
 
-	//Flashing led
+	SMTP::Init(IPAddress( SMTP_IP_A, SMTP_IP_B, SMTP_IP_C, SMTP_IP_D ));
+
+	//Flashing led on Pin 12 show us we are still working ok
 	pinMode(ledFeedback,OUTPUT); digitalWrite(ledFeedback,ledFeedbackState);
 
-	//Log("Ram:");int nRam = freeRam();LogLn(nRam);
-	memrep();
-	
-	LogLn("Ready "+sVersion);
+	Log_ShowMem();
+
 }
 
 void loop()
 {
-	RKPClass::loop_PanelMon();
+	if (RKPClass::loop_PanelMon())
+		RKPClass::SendDisplayToClientIfChanged();
 
-	//Any browser activity?	
+	//Any browser activity?	Set up new connections and deliver web pages
 	WebSocket::EtherPoll();
 	
 	//Send Email if Alarm
@@ -173,15 +140,16 @@ void loop()
 
 	if (RKPClass::NextKeyPress() == 'X')
 	{
-		memrep();
+		Log_ShowMem();
 		RKPClass::PopKeyPress();
 	}
 
-	//if (RKPClass::NextKeyPress() == 'A')
-	//{
-	//	SMTP::QueueEmail();
-	//	RKPClass::PopKeyPress();
-	//}
+	if (RKPClass::NextKeyPress() == 'A')
+	{
+		SMTP::QueueEmail();
+		RKPClass::PopKeyPress();
+	}
+
 }
 
 
