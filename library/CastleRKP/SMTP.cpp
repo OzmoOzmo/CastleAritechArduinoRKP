@@ -1,4 +1,4 @@
-/* 
+/*
 * SMTP.cpp
 *
 * Created: 4/5/2014 7:45:36 PM
@@ -28,13 +28,17 @@ EthernetClient SMTP::client;
 unsigned long SMTP::mTimeout = LONG_MAX;
 boolean SMTP::bWaitForResponse = false;
 
-IPAddress SMTP::SMTPServer( SMTP_IP_A, SMTP_IP_B, SMTP_IP_C, SMTP_IP_D );
+IPAddress SMTP::mSMTPServerIP;
 
 // protected constructor
 SMTP::SMTP()
 {
 }
 
+void SMTP::Init( IPAddress smptServerIP )
+{
+	mSMTPServerIP = smptServerIP;
+}
 
 void SMTP::QueueEmail()
 {
@@ -49,7 +53,7 @@ void SMTP::QueueEmail()
 void SMTP::SendEmailProcess()
 {
 #ifdef sEmail
-	
+
 	if(millis() > SMTP::mTimeout)
 	{//we have taken longer than 10 secs to send our email - reset and resend
 		LogLn(F("Email Reset."));
@@ -63,18 +67,17 @@ void SMTP::SendEmailProcess()
 		if (SMTP::WaitForReplyLine())
 			return;	//not yet - try next time
 	}
-	
+
 	if (SMTP::nEmailStage==0)
 	{//Connect
 		SMTP::mTimeout = millis() + 10000; //10 sec to send...or will resend
 
 		LogLn(F("--Start SendMail--"));
-		
-		Log(F("Cleaning buffers..{"));
-		while(client.available()) Log(client.read()); LogLn("}");
-		
+
+		Log(F("Cleaning buffers..{"));while(client.available()) Log(client.read()); LogLn("}");
+
 		LogLn(F("Connecting..."));
-		if(!client.connect(SMTP::SMTPServer,25) /*|| !client.connected()*/)
+		if(!client.connect(SMTP::mSMTPServerIP,25) /*|| !client.connected()*/)
 		{
 			LogLn(F("connection failed"));
 			return;
@@ -83,7 +86,7 @@ void SMTP::SendEmailProcess()
 		SMTP::bWaitForResponse=true;
 		return;
 	}
-	
+
 	if (nEmailStage==1)
 	{
 		LogLn(F("Sending helo"));
@@ -115,19 +118,19 @@ void SMTP::SendEmailProcess()
 		SMTP::bWaitForResponse=true;
 		return;
 	}
-	
+
 	if (nEmailStage==5)
 	{
 		LogLn(F("Sending message"));
 		SMTP::client.println("To: "sEmail);
 		SMTP::client.println("From: TheHouse <" sEmail ">");
 		SMTP::client.println("Subject: House Calling. Alarm.\r\n");
-	
+
 		{
 			SMTP::client.println("The House Alarm has gone off\r\n");
 			SMTP::client.println("EndLog");
 		}
-		
+
 		SMTP::client.println(".");
 		SMTP::bWaitForResponse=true;
 		return;
@@ -141,7 +144,7 @@ void SMTP::SendEmailProcess()
 		SMTP::bWaitForResponse=true;
 		return;
 	}
-	
+
 	if (nEmailStage==7)
 	{
 		SMTP::client.stop();
@@ -149,7 +152,7 @@ void SMTP::SendEmailProcess()
 		LogLn(F("disconnected"));
 		return;
 	}
-	
+
 #endif
 }
 
