@@ -39,14 +39,14 @@
 	#define Log2(x,y) softwareSerial.print(x,y)
 	#define LogLn(x) softwareSerial.println(x)
 	#define LogLn2(x,y) softwareSerial.println(x,y)
-	
+
 #else
 	#define Log(x) {}
 	#define Log2(x,y) {}
 	#define LogLn(x) {}
 	#define LogLn2(x,y) {}
-	
-	
+
+
 #endif
 
 
@@ -55,5 +55,7 @@ void LogHex(char* s);
 void LogHex(byte* s , int len);
 
 void Log_Init();
+
+void Log_ShowMem();
 
 #endif
