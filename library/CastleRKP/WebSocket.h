@@ -2,16 +2,18 @@
  * WebSocket.h
  *
  * Created: 3/30/2014 11:54:30 PM Ozmo
- */ 
+ */
 
 #ifndef WEBSOCKET_H_
 #define WEBSOCKET_H_
+
+#include <IPAddress.h>
 
 class WebSocket
 {
 	public:
 		// Create a Websocket server
-		void static WebSocket_EtherInit();
+		void static WebSocket_EtherInit(IPAddress ip, IPAddress gateway);
 
 		//Send something to connected browser
 		bool static WebSocket_send(char* data, byte length);
