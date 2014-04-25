@@ -1,44 +1,31 @@
+/*
+ * WebSocket.h
+ *
+ * Created: 3/30/2014 11:54:30 PM Ozmo
+ */
 
-/* 
-* SMTP.h
-*
-* Created: 4/5/2014 7:45:36 PM
+#ifndef WEBSOCKET_H_
+#define WEBSOCKET_H_
 
-*/
+#include <IPAddress.h>
 
-
-#ifndef __SMTP_H__
-#define __SMTP_H__
-
-#include <EthernetClient.h>
-
-class SMTP
+class WebSocket
 {
-//variables
-public:
-	static int nEmailStage;
-protected:
-private:
-	static EthernetClient client;
-	//static int mDelay;
-	static unsigned long mTimeout;
-	static boolean bWaitForResponse;
-	static IPAddress SMTPServer;
-	
-//functions
-public:
-	static void QueueEmail();
-	static void SendEmailProcess();
-	static boolean WaitForReplyLine();
+	public:
+		// Create a Websocket server
+		void static WebSocket_EtherInit(IPAddress ip, IPAddress gateway);
 
-protected:
-private:
-	SMTP();
-	SMTP( const SMTP &c );
-	SMTP& operator=( const SMTP &c );
-	
-	boolean waitForReplyLine();
-	
-}; //SMTP
+		//Send something to connected browser
+		bool static WebSocket_send(char* data, byte length);
 
-#endif //__SMTP_H__
+		void static WebSocket_doHandshake();
+
+		byte static ReadNext();
+		bool static RejectBroswerMsg();
+		bool static WebSocket_getFrame();
+		void static EtherPoll();
+	private:
+		void static SendHTMLSite();
+};
+
+#endif /* WEBSOCKET_H_ */
