@@ -15,37 +15,26 @@
  *
 */
 
-
 #include "sha1.h"
 #include "Base64.h"
 #include "RKP.h"	//for nKeyToSend
 #include "LOG.h"
 #include "websocket.h"
 
-//#include <Ethernet.h>
-//#include <EEPROM.h>
-//#include <EEProm.cpp>
-//#include <HardwareSerial.h>
-//#include <HardwareSerial.cpp>
-//#include <avr/io.h>
-//#include <wiring_digital.c>		//for pinMode
-
-
-//Ethernet
 #ifdef AtmelStudio
-	//Other modules
-	#include <SPI.cpp>
-	#include <Ethernet.cpp>
-	#include <EthernetClient.cpp>
-	#include <EthernetServer.cpp>
-	#include <utility\socket.cpp>
-	#include <utility\w5100.cpp>
+  //Other modules
+  #include <SPI.cpp>
+  #include <Ethernet.cpp>
+  #include <EthernetClient.cpp>
+  #include <EthernetServer.cpp>
+  #include <utility\socket.cpp>
+  #include <utility\w5100.cpp>
 #else
-	#include <SPI.h>
-	#include <Ethernet.h>
-	#include <EthernetClient.h>
-	#include <EthernetServer.h>
-	#include <util.h>
+  #include <SPI.h>
+  #include <Ethernet.h>
+  #include <EthernetClient.h>
+  #include <EthernetServer.h>
+  #include <util.h>
 #endif
 
 
@@ -55,18 +44,11 @@
 #define PROGMEM __attribute__((section(".progmem.data")))
 #endif
 
-//Ethernet
-IPAddress ip( 192, 168, 1, 205 );		//Give the device a unique IP
-IPAddress gateway( 192, 168, 1, 1 );	//Gateway (the Router)
-IPAddress subnet( 255, 255, 255, 0 );	//typically dont need change
-// this sequence must be unique on your lan
-byte mac[] = { 0x90, 0xA2, 0xDA, 0x00, 0x59, 0x67 };	//typically dont need change
 
 
 //--Sockets
 //use this as password - pick random port - set code tamper on alarm also.
-#define inPort 8383
-EthernetServer ethServer(inPort);
+EthernetServer ethServer(IP_P);
 //EthernetServer ethServerHTML(80);
 EthernetClient ethClient;
 
@@ -75,7 +57,7 @@ EthernetClient ethClient;
 char htmlSite[] PROGMEM=
 "<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Transitional//EN'>"
 "<html><head><title>Castle</title>"
-"<meta name='viewport' content='width=320, initial-scale=2.3, user-scalable=no'>"
+"<meta name='viewport' content='width=320, initial-scale=2.0, user-scalable=no'>"
 "<style>.long{height: 64px;} button{height: 35px;width: 35px;}</style>"
 "<script src='http://goo.gl/m3GB3M' type='text/javascript'></script>"
 "</head><body>"
@@ -107,28 +89,29 @@ void WebSocket::EtherPoll()
 	// Should be called for each loop.
 	EthernetClient cli;
 	if (cli = ethServer.available())
-	{//LogLn(F("browser req"));
+	{
+		RKPClass::loop_PanelMon(); //most important we poll this or RKP will loose data
+		//LogLn(F("browser req"));
 		if (cli == true)
 		{
 			if (ethClient != cli)
 			{//New connection
-				////Sec risk-takes over existing session
-				LogLn(F("Connect"));
+				//Secrisk
 				ethClient = cli;
 				WebSocket_doHandshake();
 			}
 			else
 			{//Existing connection
 				if (WebSocket_getFrame() == false)
-				{
+				{//Request to end comms (rarely happens)
+					RKPClass::loop_PanelMon(); //most important we poll this or RKP will loose data
+
 					//Got bad frame, disconnect
 					Log(F("Disconnect{"));
 					while(ethClient.available()>0)
-						LogHex(ethClient.read());
-					LogLn(F("}"));
+						ethClient.read();
 
 					ethClient.flush();
-					delay(1);
 					ethClient.stop();
 				}
 			}
@@ -164,18 +147,30 @@ void WebSocket::SendHTMLSite(/*EthernetClient& cli*/)
 		//	ethClient.print(F("button"));
 		//else
 		ethClient.print(c);
+		if (n%100==0)
+			RKPClass::loop_PanelMon(); //most important we poll this when doing other stuff or RKP will loose data
 	}
+	RKPClass::loop_PanelMon(); //most important we poll this or RKP will loose data
+
 	// close the connection so browser gets data
 	ethClient.flush();
-	delay(1);
+	//delay(1);
 	ethClient.stop();
 	LogLn("Sent Page");
 }
 
 
 // Create a Websocket server
-void WebSocket::WebSocket_EtherInit()
+void WebSocket::WebSocket_EtherInit( IPAddress ip, IPAddress gateway )
 {
+	//IPAddress ip( 192, 168, 1 , 205);			//Give the device a unique IP
+	//IPAddress gateway( 192, 168, 1, 1 );	//Gateway (the Router)
+
+	IPAddress subnet( 255, 255, 255, 0 );	//typically dont need change
+	// this sequence must be unique on your lan
+	byte mac[] = { 0x90, 0xA2, 0xDA, 0x00, 0x59, 0x67 };	//typically dont need change
+
+
 	//Start Ethernet
 	Ethernet.begin(mac, ip, gateway, gateway, subnet);
 
@@ -214,6 +209,7 @@ bool WebSocket::WebSocket_send(char* data, byte length)
 
 void WebSocket::WebSocket_doHandshake()
 {
+	LogLn("HS");
 	char htmlline[128];	//TODO: there are 3 buffers used - htmlline, key and sha - maybe could merge them
 	char key[80];
 
@@ -258,6 +254,9 @@ void WebSocket::WebSocket_doHandshake()
 			}
 
 			counter = 0; // Start saving new header string
+
+			//Each Line - check if there is any comms to do
+			RKPClass::loop_PanelMon(); //most important we poll this or RKP will loose data
 		}
 	}
 
@@ -281,11 +280,11 @@ void WebSocket::WebSocket_doHandshake()
 		LogLn(F("Connected"));
 
 		//Send any display we might have
-		RKPClass::SendDisplayToBrowser();
+		RKPClass::bScreenHasUpdated = true; //RKPClass::SendDisplayToBrowser();
 	}
 	else if (bReqWebPage)
 	{// Nope, Not a websocket request - send the main webpage
-		LogLn(F("WebPageReq"));
+		//LogLn(F("WebPageReq"));
 		SendHTMLSite();
 	}
 	else
@@ -294,7 +293,7 @@ void WebSocket::WebSocket_doHandshake()
 		ethClient.println(F("Content-Type: text/html"));
 		ethClient.println(F("Connnection: close"));
 		ethClient.println();
-		delay(1);
+		//delay(1);
 		ethClient.stop();
 	}
 	return;
@@ -316,45 +315,29 @@ byte WebSocket::ReadNext()
 	return bite;
 }
 
-//Crashes Arduino
-//bool WebSocket::RejectBroswerMsg()
-//{
-//	Log(F("Res:"));
-//	ethClient.write((uint8_t) 0x08);Log(F("08"));
-//	ethClient.write((uint8_t) 0x02);Log(F("08"));
-//	ethClient.write((uint8_t) 0x03);Log(F("38"));
-//	ethClient.write((uint8_t) 0xf1);Log(F("f1"));
-//	return false;
-//}
-
 bool WebSocket::WebSocket_getFrame()
 {
-	//Log(F("GetFrame."));
 	// Get opcode
-	byte bite = ReadNext();
+	byte bite = ReadNext(); if (bite==0xFF) return false;
 
 	frame.opcode = bite & 0xf; // Opcode
 	frame.isFinal = bite & 0x80; // Final frame?
 	// Determine length (only accept <= 64 for now)
-	bite = ReadNext();
+	bite = ReadNext(); if (bite==0xFF) return false;
 
 	frame.length = bite & 0x7f; // Length of payload
-	if (frame.length >= 64) {	//out by one 63???
-		Log(F("Frame Too Big{")); // LogLn(frame.length);
-		while(ethClient.available()>0)
-				LogHex(ethClient.read());
-		LogLn(F("}"));
+	if (frame.length >= 64)
+	{//Unlikely to happen
+		Log(F("Frame Too Big")); LogLn(bite);
 		return false;
 	}
 	// Client should always send mask, but check just to be sure
 	frame.isMasked = bite & 0x80;
 	if (frame.isMasked) {
-		//Log("Mask={");
 		frame.mask[0] = ReadNext();
 		frame.mask[1] = ReadNext();
 		frame.mask[2] = ReadNext();
 		frame.mask[3] = ReadNext();
-		//Log("}");
 	}
 
 	// Get message bytes and unmask them if necessary
