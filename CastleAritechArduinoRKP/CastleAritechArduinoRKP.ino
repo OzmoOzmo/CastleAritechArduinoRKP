@@ -122,7 +122,7 @@ void loop()
 	WebSocket::EtherPoll();
 	
 	//Send Email if Alarm
-	if(SMTP::nEmailStage >= 0)	//TODO: put back
+	if(SMTP::nEmailStage >= 0)
 		SMTP::SendEmailProcess();
 	
 	//Flash status led
@@ -133,23 +133,8 @@ void loop()
 		
 		ledFeedbackState = ledFeedbackState == HIGH? LOW:HIGH;
 		digitalWrite(ledFeedback,ledFeedbackState);
-		//LogLn((unsigned long)tiNow);
-		//Log(F("."));
 		//Test comms: RKPClass::SendToPanel( 0 );
 	}
-
-	if (RKPClass::NextKeyPress() == 'X')
-	{
-		Log_ShowMem();
-		RKPClass::PopKeyPress();
-	}
-
-	if (RKPClass::NextKeyPress() == 'A')
-	{
-		SMTP::QueueEmail();
-		RKPClass::PopKeyPress();
-	}
-
 }
 
 
