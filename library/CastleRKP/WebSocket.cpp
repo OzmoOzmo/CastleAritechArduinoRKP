@@ -57,13 +57,11 @@ EthernetClient ethClient;
 char htmlSite[] PROGMEM=
 "<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Transitional//EN'>"
 "<html><head><title>Castle</title>"
-"<meta name='viewport' content='width=320, initial-scale=2.0, user-scalable=no'>"
+"<meta name='viewport' content='width=320, initial-scale=1.2, user-scalable=no'>"
 "<style>.long{height: 64px;} button{height: 35px;width: 35px;}</style>"
 "<script src='http://goo.gl/m3GB3M' type='text/javascript'></script>"
 "</head><body>"
-//<!--input type='text' size='30' autocorrect='off' autocapitalize='on'-->
 "<div style='border: 5px solid black; width: 180px;'>&nbsp;<div id=msg1 style='float:left'></div><div id=msg2 style='float:right'></div></div>"
-//<!-- IPhone experiment <input type='tel' id='t'/> -->
 "<table>"
 "<tr><td><button>1</button></td><td><button>2</button></td><td><button>3</button></td><td rowspan=2><button class=long>Y</button></td></tr>"
 "<tr><td><button>4</button></td><td><button>5</button></td><td><button>6</button></td></tr>"
@@ -72,8 +70,7 @@ char htmlSite[] PROGMEM=
 "</table>"
 "<script>var ws;$(document).ready(function(){"
 "try{"
-	"ws = new WebSocket('ws://192.168.1.205:8383/sock');"
-	//"ws = new WebSocket('ws://x');"
+	"ws = new WebSocket('ws://'+location.hostname+':8383/sock');"
 	"ws.onmessage = function (evt) {var d=evt.data.split('|');$('#msg1').text(d[0]);$('#msg2').text(d[1]);};"
 	"ws.onerror = function (evt) {$('#msg').append('ERR:' + evt.data);};"
 	"ws.onclose = function (evt) {$('#msg').text('Closed');};"
