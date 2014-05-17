@@ -71,6 +71,7 @@ char htmlSite[] PROGMEM=
 "<script>var ws;$(document).ready(function(){"
 "try{"
 	"ws = new WebSocket('ws://'+location.hostname+':8383/sock');"
+	//"ws = new WebSocket('ws://x');"
 	"ws.onmessage = function (evt) {var d=evt.data.split('|');$('#msg1').text(d[0]);$('#msg2').text(d[1]);};"
 	"ws.onerror = function (evt) {$('#msg').append('ERR:' + evt.data);};"
 	"ws.onclose = function (evt) {$('#msg').text('Closed');};"
