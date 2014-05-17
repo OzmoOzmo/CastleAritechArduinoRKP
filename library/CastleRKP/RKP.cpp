@@ -91,7 +91,8 @@ bool RKPClass::loop_PanelMon()
 			LogHex(buf,64);
 		}
 	}
-	return;*/
+	return false;*/
+
 
 	//Knock off the "We Sent To Panel" Led not less than 100ms after we turn it on
 	if (timeToSwitchOffLed != 0 && millis() > timeToSwitchOffLed)
@@ -141,8 +142,8 @@ bool RKPClass::loop_PanelMon()
 			byte idDev = (msgbuf[0] & 0xf0)>>4; //ID of remote that message is for 0x0-0xf are valid ids
 
 			//Uncomment to Display all packets
-			//Log(F("DevID:"));Log(idDev);Log(' ');LogHex(msgbuf,msgbufLen);
-			//LogLn(idDev);
+			Log(F("DevID:"));Log(idDev);LogLn(' ');LogHex(msgbuf,msgbufLen);
+
 
 			byte cs = 0;
 			for(int n=0;n<msgbufLen;n++)
@@ -347,7 +348,7 @@ char RKPClass::NextKeyPress()
 char RKPClass::PopKeyPress()
 {
 	char next = NextKeyPress();
-	if (next!=0xFF)
+	if (next!=-1)
 		RKPClass::msKeyToSend = RKPClass::msKeyToSend.substring(1);
 	return next;
 }
@@ -374,10 +375,10 @@ void RKPClass::SendToPanel( int id, bool bAck )
 	if (bAck)	//change to if(true) to remove retries
 	{//LogLn("Ack");
 		char nKeyToSend = PopKeyPress();
-		if (nKeyToSend!=0xff)
+		if (nKeyToSend!=-1)
 		{
 			//nKeyToSend &= 0x20; //tolower
-			int nNumb=0x0e;
+			int nNumb=0;
 			if (nKeyToSend >='1' && nKeyToSend <= '9')
 			nNumb = (nKeyToSend-'0');
 			else if (nKeyToSend == '0')	nNumb = 0x0a;
@@ -387,9 +388,10 @@ void RKPClass::SendToPanel( int id, bool bAck )
 			else if (nKeyToSend == 'x'||nKeyToSend == ';'||nKeyToSend == 'n'||nKeyToSend == 'N')	nNumb = 0x0e;	//UP + 0 or X(reject) (WAIT on IPhone numpad)
 			else if (nKeyToSend == 13||nKeyToSend == '+'||nKeyToSend == 'y'||nKeyToSend == 'Y')	nNumb = 0x0f;	//UP + 0 or *(accept) (+ on IPhone numpad)
 
-			Log(F("Sent: ")); LogHex(nNumb);LogLn(F("."));
+			Log(F("Sent: ")); LogHex(nNumb); LogHex(nKeyToSend); LogLn(F("."));
 
-			h2 = nNumb<<4;
+			if(nNumb!=0)
+				h2 = nNumb<<4;
 		}
 		nH2Previous = h2;
 	}
