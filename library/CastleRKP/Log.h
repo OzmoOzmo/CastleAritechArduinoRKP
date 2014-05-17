@@ -28,17 +28,13 @@
 
 #ifndef QUIET
 
-	#include "SoftwareSerial.h"
-
-	//extern class SoftwareSerial;
-	extern SoftwareSerial softwareSerial;
 
 	#define nSerialBaudDbg 19200
 
-	#define Log(x) softwareSerial.print(x)
-	#define Log2(x,y) softwareSerial.print(x,y)
-	#define LogLn(x) softwareSerial.println(x)
-	#define LogLn2(x,y) softwareSerial.println(x,y)
+	#define Log(x) Serial.print(x)
+	#define Log2(x,y) Serial.print(x,y)
+	#define LogLn(x) Serial.println(x)
+	#define LogLn2(x,y) Serial.println(x,y)
 
 #else
 	#define Log(x) {}
