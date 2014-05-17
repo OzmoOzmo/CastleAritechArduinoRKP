@@ -29,14 +29,6 @@
 #define PROGMEM __attribute__((section(".progmem.data")))
 #endif
 
-#ifndef QUIET
-//---Serial (for debugging)
-//#include <Arduino.h>
-#include <SoftwareSerial.h>
-#include <SoftwareSerial.cpp>
-
-SoftwareSerial softwareSerial(9, 11,false); // RX, TX
-#endif
 
 
 #ifdef QUIET
@@ -106,7 +98,7 @@ void LogHex(byte* s , int len)
 void Log_Init()
 {
 #ifndef QUIET
-	softwareSerial.begin(nSerialBaudDbg);
+	Serial.begin(nSerialBaudDbg);
 #endif
 }
 
