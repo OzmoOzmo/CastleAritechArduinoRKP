@@ -1,7 +1,7 @@
 /*
 *   Castle KeyPad
 *
-*   Aritech Alarm Panel Arduino Internet Enabled Keypad -  CS350 - CD34 - CD72 - CD91 and more 
+*   Aritech Alarm Panel Arduino Internet Enabled Keypad -  CS350 - CD34 - CD72 - CD91 - CS350 and more 
 *   
 *   For Arduino (UNO or Leonardo) with added Ethernet Shield
 *   
