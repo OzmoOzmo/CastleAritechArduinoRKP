@@ -3,7 +3,7 @@
  *
  * Created: 3/30/2014 11:18:18 PM
 
- */
+ */ 
 
 #ifndef RKP_h
 #define RKP_h
@@ -26,7 +26,7 @@ class RKPClass
 		static void Init(byte nRKP_ID);
 		static void SendDisplayToBrowser();
 		static String msKeyToSend;
-
+		
 		static bool dateFlash;
 		static byte dispBuffer[];
 		static bool mbIsPanelWarning;
