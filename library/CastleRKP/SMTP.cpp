@@ -1,4 +1,4 @@
-/*
+/* 
 * SMTP.cpp
 *
 * Created: 4/5/2014 7:45:36 PM
@@ -29,31 +29,34 @@ unsigned long SMTP::mTimeout = LONG_MAX;
 boolean SMTP::bWaitForResponse = false;
 
 IPAddress SMTP::mSMTPServerIP;
+String msEmail=NULL;
 
 // protected constructor
 SMTP::SMTP()
 {
 }
 
-void SMTP::Init( IPAddress smptServerIP )
+void SMTP::Init( IPAddress smptServerIP, String sEmail )
 {
 	mSMTPServerIP = smptServerIP;
+	msEmail = sEmail;
 }
 
 void SMTP::QueueEmail()
 {
-#ifdef sEmail
-	LogLn(F("Sending Email."));
-	nEmailStage=0;
-#else
-	LogLn(F("Email Disabled."));
-#endif
+	if(msEmail != NULL)
+	{
+		LogLn(F("Sending Email."));
+		nEmailStage=0;
+	}
+	else
+		LogLn(F("Email Disabled."));
 }
 
 void SMTP::SendEmailProcess()
 {
-#ifdef sEmail
-
+	if (msEmail == NULL)
+		return;
 	if(millis() > SMTP::mTimeout)
 	{//we have taken longer than 10 secs to send our email - reset and resend
 		LogLn(F("Email Reset."));
@@ -67,15 +70,15 @@ void SMTP::SendEmailProcess()
 		if (SMTP::WaitForReplyLine())
 			return;	//not yet - try next time
 	}
-
+	
 	if (SMTP::nEmailStage==0)
 	{//Connect
 		SMTP::mTimeout = millis() + 10000; //10 sec to send...or will resend
 
 		LogLn(F("--Start SendMail--"));
-
+		
 		Log(F("Cleaning buffers..{"));while(client.available()) Log(client.read()); LogLn("}");
-
+		
 		LogLn(F("Connecting..."));
 		if(!client.connect(SMTP::mSMTPServerIP,25) /*|| !client.connected()*/)
 		{
@@ -86,7 +89,7 @@ void SMTP::SendEmailProcess()
 		SMTP::bWaitForResponse=true;
 		return;
 	}
-
+	
 	if (nEmailStage==1)
 	{
 		LogLn(F("Sending helo"));
@@ -97,8 +100,8 @@ void SMTP::SendEmailProcess()
 
 	if (nEmailStage==2) //set to 20 to test retry
 	{
-		LogLn(F("From.."));
-		SMTP::client.println("MAIL From: "sEmail);	//(sender)
+		LogLn(F("From.."));	//(sender)
+		SMTP::client.print("MAIL From: "); SMTP::client.println(msEmail);
 		SMTP::bWaitForResponse=true;
 		return;
 	}
@@ -106,7 +109,7 @@ void SMTP::SendEmailProcess()
 	if (nEmailStage==3)
 	{//recipient address
 		LogLn(F("To.."));
-		SMTP::client.println("RCPT To: "sEmail);		//client.println("RCPT To: <ambrosec@gmail.com>");
+		SMTP::client.print("RCPT To: "); SMTP::client.println(msEmail);
 		SMTP::bWaitForResponse=true;
 		return;
 	}
@@ -118,19 +121,19 @@ void SMTP::SendEmailProcess()
 		SMTP::bWaitForResponse=true;
 		return;
 	}
-
+	
 	if (nEmailStage==5)
 	{
 		LogLn(F("Sending message"));
-		SMTP::client.println("To: "sEmail);
-		SMTP::client.println("From: TheHouse <" sEmail ">");
+		SMTP::client.print("To: "); SMTP::client.println(msEmail);
+		SMTP::client.print("From: TheHouse <"); SMTP::client.print(msEmail); SMTP::client.println(">");
 		SMTP::client.println("Subject: House Calling. Alarm.\r\n");
-
+	
 		{
 			SMTP::client.println("The House Alarm has gone off\r\n");
-			SMTP::client.println("EndLog");
+			SMTP::client.println("EndEmail");
 		}
-
+		
 		SMTP::client.println(".");
 		SMTP::bWaitForResponse=true;
 		return;
@@ -144,7 +147,7 @@ void SMTP::SendEmailProcess()
 		SMTP::bWaitForResponse=true;
 		return;
 	}
-
+	
 	if (nEmailStage==7)
 	{
 		SMTP::client.stop();
@@ -152,8 +155,6 @@ void SMTP::SendEmailProcess()
 		LogLn(F("disconnected"));
 		return;
 	}
-
-#endif
 }
 
 //return False and inc stage if we get a response - true if we are waiting
