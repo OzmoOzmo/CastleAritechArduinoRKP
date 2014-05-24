@@ -20,8 +20,8 @@
 //This is the Keypad id of the Arduinio - recommended 1 or 2 (0 is first keypad)
 #define RKP_ID 1
 
-//change this to your email address - Or comment out to Not send emails at all
-#define sEmail "ozmo@example.com"	
+//change this to your email address - Or comment out to disable sending email alerts
+//Moved to config.h - please edit it there (#define sEmail "ozmo@example.com")
 
 //The Arduino IP address and Port (192.168.1.205:8383)
 #define IP_A 192
