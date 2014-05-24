@@ -1,7 +1,7 @@
 /*
 *   Castle KeyPad
 *
-*   Aritech Alarm Panel Arduino Internet Enabled Keypad -  CS350 - CD34 - CD72 - CD91 - CS350 and more 
+*   Aritech Alarm Panel Arduino Internet Enabled Keypad -  CS350 - CD34 - CD72 - CD91 and more 
 *   
 *   For Arduino (UNO or Leonardo) with added Ethernet Shield
 *   
@@ -20,8 +20,8 @@
 //This is the Keypad id of the Arduinio - recommended 1 or 2 (0 is first keypad)
 #define RKP_ID 1
 
-//change this to your email address - Or comment out to disable sending email alerts
-//Moved to config.h - please edit it there (#define sEmail "ozmo@example.com")
+//change this to your email address - set to null to Not send emails at all
+const String sEmail = "ozmo@example.com";	
 
 //The Arduino IP address and Port (192.168.1.205:8383)
 #define IP_A 192
@@ -104,7 +104,7 @@ void setup()
 		IPAddress( IP_A, IP_B, IP_C, 1 )				//Gateway (your Router)
 	);
 
-	SMTP::Init(IPAddress( SMTP_IP_A, SMTP_IP_B, SMTP_IP_C, SMTP_IP_D ));
+	SMTP::Init(IPAddress( SMTP_IP_A, SMTP_IP_B, SMTP_IP_C, SMTP_IP_D ), sEmail);
 
 	//Flashing led on Pin 12 show us we are still working ok
 	pinMode(ledFeedback,OUTPUT); digitalWrite(ledFeedback,ledFeedbackState);
