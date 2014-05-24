@@ -1,4 +1,4 @@
-/*
+/* 
 * SMTP.h
 *
 * Created: 4/5/2014 7:45:36 PM
@@ -23,10 +23,10 @@ private:
 	static unsigned long mTimeout;
 	static boolean bWaitForResponse;
 	static IPAddress mSMTPServerIP;
-
+	
 //functions
 public:
-	static void Init(IPAddress smptServer );
+	static void Init(IPAddress smptServer, String sEmail);
 	static void QueueEmail();
 	static void SendEmailProcess();
 	static boolean WaitForReplyLine();
@@ -36,9 +36,9 @@ private:
 	SMTP();
 	SMTP( const SMTP &c );
 	SMTP& operator=( const SMTP &c );
-
+	
 	boolean waitForReplyLine();
-
+	
 }; //SMTP
 
 #endif //__SMTP_H__
