@@ -243,13 +243,13 @@ void RKPClass::DisplayScreen( byte* msgbuf, int msgbufLen )
 			byte m1=(b3 & 0xf0)>>4; if(m1==0x0A) m1=0;
 			byte m2=(b3 & 0x0f); if(m2==0x0A) m2=0;
 
-			memcpy_P(dispBuffer+0,alldays+(day*3),3);
+			memcpy(dispBuffer+0,alldays+(day*3),3);
 			dispBuffer[3]=' ';
 			dispBuffer[4]=('0'+(int)(date/10));
 			dispBuffer[5]=('0'+(date%10));
 			dispBuffer[6]=' ';
 
-			memcpy_P(dispBuffer+7,allmonths+(nMonth*3),3);
+			memcpy(dispBuffer+7,allmonths+(nMonth*3),3);
 			dispBuffer[10]=' ';
 			dispBuffer[11]='0'+h1;
 			dispBuffer[12]='0'+h2;
