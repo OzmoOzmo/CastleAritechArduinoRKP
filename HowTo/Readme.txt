@@ -1,4 +1,15 @@
 
+
+Note: Only Compiles on Arduino IDE 1.0.5
+
+
+
+You need place the files in the Library\CastleRKP folder into the Arduino Library folder
+
+eg. C:\Arduino.1.0.5\libraries\CastleRKP
+
+
+
 See http://www.boards.ie/vbulletin/showthread.php?p=88215184 for the details...
 
 
