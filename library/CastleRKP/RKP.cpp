@@ -36,6 +36,12 @@
 #define nSerialBaudKP_RX 1953 // 1953
 #define ixMaxPanel 40	//40 bytes enough
 
+#if defined(UBRR1H)
+//Leonardo etc will use Serial1 (best Serial port on Leonardo)
+#else
+//UNO etc (no Serial1)
+  #define Serial1 Serial
+#endif
 
 #define LED_Stat 13
 
