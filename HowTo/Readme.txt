@@ -1,13 +1,6 @@
 
 
-Note: Only Compiles on Arduino IDE 1.0.5
-
-
-
-You need place the files in the Library\CastleRKP folder into the Arduino Library folder
-
-eg. C:\Arduino.1.0.5\libraries\CastleRKP
-
+Note: Updated to Compiles using the latest Arduino IDE 1.6.x from "Arduino.cc"
 
 
 See http://www.boards.ie/vbulletin/showthread.php?p=88215184 for the details...
@@ -20,9 +13,7 @@ There are two options for the electronics
 
 1. Straight connect TX of Arduino and RX of the Alarm panel - and use a Diode and connect the RX of Arduino to TX of the Alarm panel
 
-2. Do it using a two transistor interface board - connects to 12v ABCD keypad socket
-
-3. Do it propperly using a 4 transistor board which completly isolates the arduino when not needed (emulates the original keypad hardware more closely)
+2. Connect using a two transistor interface board - connects to 12v ABCD keypad socket
 
 
 

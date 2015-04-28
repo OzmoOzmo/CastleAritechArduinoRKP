@@ -9,6 +9,7 @@
 *
 *   V1.04  March  2014: Arm Disarm Complete and tested as working
 *   V1.2	  April  2014: Updated to use ABCD Keypad bus
+*   V1.3	  April  2015: Updated to current Arduino IDE
 *
 *   Author: Ozmo
 *
