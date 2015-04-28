@@ -34,28 +34,20 @@
   #include <Ethernet.h>
   #include <EthernetClient.h>
   #include <EthernetServer.h>
-  #include <util.h>
+  //#include <util.h>
 #endif
-
-
-//Workaround if needed for http://gcc.gnu.org/bugzilla/show_bug.cgi?id=34734
-#ifdef PROGMEM
-#undef PROGMEM
-#define PROGMEM __attribute__((section(".progmem.data")))
-#endif
-
 
 
 //--Sockets
 //use this as password - pick random port - set code tamper on alarm also.
-EthernetServer ethServer(IP_P);
-//EthernetServer ethServerHTML(80);
+EthernetServer ethServer = EthernetServer(IP_P);
 EthernetClient ethClient;
 
 
 //"*" will be replaced with button
-char htmlSite[] PROGMEM=
-"<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Transitional//EN'>"
+const char htmlSite[] PROGMEM=
+//"<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Transitional//EN'>"
+"<!DOCTYPE html>"
 "<html><head><title>Castle</title>"
 "<meta name='viewport' content='width=320, initial-scale=1.2, user-scalable=no'>"
 "<style>.long{height: 64px;} button{height: 35px;width: 35px;}</style>"
@@ -70,8 +62,7 @@ char htmlSite[] PROGMEM=
 "</table>"
 "<script>var ws;$(document).ready(function(){"
 "try{"
-	"ws = new WebSocket('ws://'+location.hostname+':8383/sock');"
-	//"ws = new WebSocket('ws://x');"
+	"ws = new WebSocket('ws://'+location.hostname+':8383/sock/');"
 	"ws.onmessage = function (evt) {var d=evt.data.split('|');$('#msg1').text(d[0]);$('#msg2').text(d[1]);};"
 	"ws.onerror = function (evt) {$('#msg').append('ERR:' + evt.data);};"
 	"ws.onclose = function (evt) {$('#msg').text('Closed');};"
@@ -85,44 +76,35 @@ char htmlSite[] PROGMEM=
 void WebSocket::EtherPoll()
 {
 	// Should be called for each loop.
-	EthernetClient cli;
-	if (cli = ethServer.available())
+	EthernetClient cli=ethServer.available();
+        //RKPClass::loop_PanelMon(); //most important we poll this or RKP will loose data
+
+	if (cli)
 	{
-		RKPClass::loop_PanelMon(); //most important we poll this or RKP will loose data
-		//LogLn(F("browser req"));
-		if (cli == true)
-		{
-			if (ethClient != cli)
-			{//New connection
-				//Secrisk
-				ethClient = cli;
-				WebSocket_doHandshake();
-			}
-			else
-			{//Existing connection
-				if (WebSocket_getFrame() == false)
-				{//Request to end comms (rarely happens)
-					RKPClass::loop_PanelMon(); //most important we poll this or RKP will loose data
+		if (ethClient != cli)
+		{//New connection
+			LogLn(F("new"));
+			//Secrisk
+			ethClient = cli;
+			WebSocket_doHandshake();
+		}
+		else
+		{//Existing connection
+                        LogLn(F("existing"));
+			if (WebSocket_getFrame() == false)
+			{//Request to end comms (rarely happens)
+				RKPClass::loop_PanelMon(); //most important we poll this or RKP will loose data
 
-					//Got bad frame, disconnect
-					Log(F("Disconnect{"));
-					while(ethClient.available()>0)
-						ethClient.read();
-
-					ethClient.flush();
-					ethClient.stop();
-				}
+				//Got bad frame, disconnect
+				Log(F("Disconnect{"));
+				while(ethClient.available()>0)
+					ethClient.read();
+				ethClient.flush();
+				ethClient.stop();
 			}
 		}
 	}
 
-/*	if (cli = ethServerHTML.available())
-	{
-		//Log(cli.available());
-		if (cli == true)
-			SendHTMLSite();
-	}
-*/
 }
 
 void WebSocket::SendHTMLSite(/*EthernetClient& cli*/)
@@ -135,7 +117,7 @@ void WebSocket::SendHTMLSite(/*EthernetClient& cli*/)
 	ethClient.println(F("Content-Type: text/html"));
 	ethClient.println(F("Connnection: close"));
 	ethClient.println();
-	char* p = &htmlSite[0];
+	const char* p = &htmlSite[0];
 	for(int n=0;n<2000;n++)
 	{
 		char c = pgm_read_byte(p++);
@@ -170,10 +152,9 @@ void WebSocket::WebSocket_EtherInit( IPAddress ip, IPAddress gateway )
 
 
 	//Start Ethernet
-	Ethernet.begin(mac, ip, gateway, gateway, subnet);
+	Ethernet.begin(mac, ip, gateway, subnet);
 
 	ethServer.begin();
-	//ethServerHTML.begin();
 	Log(F("server is at ")); LogLn(Ethernet.localIP());
 
 	delay(150); // Settle time
@@ -182,6 +163,8 @@ void WebSocket::WebSocket_EtherInit( IPAddress ip, IPAddress gateway )
 //Send something to connected browser
 bool WebSocket::WebSocket_send(char* data, byte length)
 {
+//]  LogLn("Sending Screen");LogHex((byte*)data,length);
+  
 	if (!ethClient.connected())
 	{
 		LogLn(F("No Client."));
@@ -201,7 +184,7 @@ bool WebSocket::WebSocket_send(char* data, byte length)
 	for (int i=0; i<length; ++i)
 		ethClient.write(data[i]);
 
-	//LogLn(F("Sent OK."));
+	//]LogLn(F("Sent OK."));
 	return true;
 }
 
@@ -218,17 +201,17 @@ void WebSocket::WebSocket_doHandshake()
 
 	while(ethClient.available()>0)
 	{//Read each line
+                //TODO: ignore any lines not starting with Sec-WebSocket-Key: if (counter.length==18){}
+
 		byte bite = ethClient.read();
 		//Log(bite);
 		htmlline[counter++] = bite;
-		if (counter > 127)
+		if (counter > (127))
 		{
 			LogLn(F("HandShake Overflow{"));
 			while(ethClient.available()>0)
 				LogHex(ethClient.read());
 			LogLn(F("}"));
-			//htmlline[127] = 0;
-			//LogHex(htmlline);
 			counter=0;
 			continue;
 		}

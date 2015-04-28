@@ -23,14 +23,6 @@
 #include "Log.h"
 
 
-//Workaround if needed for http://gcc.gnu.org/bugzilla/show_bug.cgi?id=34734
-#ifdef PROGMEM
-#undef PROGMEM
-#define PROGMEM __attribute__((section(".progmem.data")))
-#endif
-
-
-
 #ifdef QUIET
 void LogBuf(char* t){}
 void LogHex(byte rx){}

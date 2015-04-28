@@ -19,14 +19,13 @@ public:
 protected:
 private:
 	static EthernetClient client;
-	//static int mDelay;
 	static unsigned long mTimeout;
 	static boolean bWaitForResponse;
 	static IPAddress mSMTPServerIP;
 	
 //functions
 public:
-	static void Init(IPAddress smptServer, String sEmail);
+	static void Init(IPAddress smptServer, const char* sEmail);
 	static void QueueEmail();
 	static void SendEmailProcess();
 	static boolean WaitForReplyLine();

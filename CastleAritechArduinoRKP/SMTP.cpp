@@ -4,10 +4,26 @@
 * Created: 4/5/2014 7:45:36 PM
 * Author: Ambrose
 */
+
 #include "limits.h"
 #include "SMTP.h"
 #include "Log.h"
 #include "Config.h"
+
+
+int SMTP::nEmailStage=-1;
+
+#ifndef SENDEMAILS
+
+// protected constructor
+SMTP::SMTP(){}
+boolean SMTP::WaitForReplyLine(){}
+void SMTP::QueueEmail(){}
+void SMTP::Init( IPAddress smptServerIP, const char* sEmail ){}
+void SMTP::SendEmailProcess(){}
+
+#else
+
 
 //for IPAddresss
 //#include "w5100.h"
@@ -15,28 +31,19 @@
 #include "IPAddress.h"
 
 
-//Workaround if needed for http://gcc.gnu.org/bugzilla/show_bug.cgi?id=34734
-#ifdef PROGMEM
-#undef PROGMEM
-#define PROGMEM __attribute__((section(".progmem.data")))
-#endif
-
-
-int SMTP::nEmailStage=-1;
 EthernetClient SMTP::client;
-//long SMTP::mDelay=-1;
 unsigned long SMTP::mTimeout = LONG_MAX;
 boolean SMTP::bWaitForResponse = false;
 
 IPAddress SMTP::mSMTPServerIP;
-String msEmail=NULL;
+const char* msEmail = NULL;
 
 // protected constructor
 SMTP::SMTP()
 {
 }
 
-void SMTP::Init( IPAddress smptServerIP, String sEmail )
+void SMTP::Init( IPAddress smptServerIP, const char* sEmail )
 {
 	mSMTPServerIP = smptServerIP;
 	msEmail = sEmail;
@@ -173,3 +180,5 @@ boolean SMTP::WaitForReplyLine()
 	}
 	return true;
 }
+
+#endif

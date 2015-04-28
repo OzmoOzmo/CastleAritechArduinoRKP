@@ -12,13 +12,7 @@
 #define SHA1_K60 0xca62c1d6
 
 
-//Workaround if needed for http://gcc.gnu.org/bugzilla/show_bug.cgi?id=34734
-#ifdef PROGMEM
-#undef PROGMEM
-#define PROGMEM __attribute__((section(".progmem.data")))
-#endif
-
-uint8_t sha1InitState[] PROGMEM = {
+const unsigned char sha1InitState[] PROGMEM = {
   0x01,0x23,0x45,0x67, // H0
   0x89,0xab,0xcd,0xef, // H1
   0xfe,0xdc,0xba,0x98, // H2

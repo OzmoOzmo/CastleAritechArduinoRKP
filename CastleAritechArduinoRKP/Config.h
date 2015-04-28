@@ -24,8 +24,12 @@
 #define QUIET 1
 
 //Build Version (displayed on webpage)
-#define sVersion "V2.00"
+#define sVersion "V3.00"
 
+//Define this to enable sending emails - undefining will same some memory - useful for debugging (cannot have QUIET off and SENDEMAILS on - not enough memory)
+#define SENDEMAILS 1
+
+//#define DISPLAY_ALL_PACKETS 1 //uncomment to send all RKP packets to debug serial
 
 //The IPPort for the server to listen on
 #define IP_P 8383

@@ -20,9 +20,6 @@
 //This is the Keypad id of the Arduinio - recommended 1 or 2 (0 is first keypad)
 #define RKP_ID 1
 
-//change this to your email address - set to null to Not send emails at all
-const String sEmail = "ozmo@example.com";	
-
 //The Arduino IP address and Port (192.168.1.205:8383)
 #define IP_A 192
 #define IP_B 168
@@ -64,30 +61,26 @@ mail-relay.3ireland.ie					3 Outgoing SMTP Server: Mobile broadband with 3 mobil
   #include "WebSocket.h"
   #include "SMTP.h"
 #else
-  #include <Base64.h>
-  #include <Config.h>
-  #include <Log.h>
-  #include <RKP.h>
-  #include <sha1.h>
-  #include <SMTP.h>
-  #include <WebSocket.h>
+  #include "Base64.h"
+  #include "Config.h"
+  #include "Log.h"
+  #include "RKP.h"
+  #include "sha1.h"
+  #include "SMTP.h"
+  #include "WebSocket.h"
 
   #include <SPI.h>
   #include <Ethernet.h>
   #include <EthernetClient.h>
   #include <EthernetServer.h>
-  #include <util.h>
 #endif
 
-//Workaround if needed for http://gcc.gnu.org/bugzilla/show_bug.cgi?id=34734
-#ifdef PROGMEM
-#undef PROGMEM
-#define PROGMEM __attribute__((section(".progmem.data")))
-#endif
+
+//change this to your email address - set to NULL to Not send emails at all
+const char* sEmail = NULL; //"ozmo@example.com";	
 
 //Flashing Led we can use to show activity
 int ledFeedback = 12;
-int ledFeedbackState = HIGH;
 int tiFlip = 0;
 int tiLast = 0;
 
@@ -107,7 +100,7 @@ void setup()
 	SMTP::Init(IPAddress( SMTP_IP_A, SMTP_IP_B, SMTP_IP_C, SMTP_IP_D ), sEmail);
 
 	//Flashing led on Pin 12 show us we are still working ok
-	pinMode(ledFeedback,OUTPUT); digitalWrite(ledFeedback,ledFeedbackState);
+	pinMode(ledFeedback,OUTPUT); digitalWrite(ledFeedback,LOW);
 
 	Log_ShowMem();
 
@@ -130,9 +123,7 @@ void loop()
 	if (tiLast < tiNow - 500)
 	{
 		tiLast = tiNow;
-		
-		ledFeedbackState = ledFeedbackState == HIGH? LOW:HIGH;
-		digitalWrite(ledFeedback,ledFeedbackState);
+		digitalWrite(ledFeedback,!digitalRead(ledFeedback));
 		//Test comms: RKPClass::SendToPanel( 0 );
 	}
 }

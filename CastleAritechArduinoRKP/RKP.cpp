@@ -23,31 +23,22 @@
 #include "SMTP.h"
 #include "Config.h"
 
-
-//Workaround if needed for http://gcc.gnu.org/bugzilla/show_bug.cgi?id=34734
-#ifdef PROGMEM
-#undef PROGMEM
-#define PROGMEM __attribute__((section(".progmem.data")))
-#endif
-
-
-//Fail: 1900	borderline:1912	goodmin: 1925
-//Fail:	2100	boderline:2050	goodmax:2000
 #define nSerialBaudKP_RX 1953 // 1953
 #define ixMaxPanel 40	//40 bytes enough
 
 #if defined(UBRR1H)
-//Leonardo etc will use Serial1 (best Serial port on Leonardo)
+//Leonardo etc will use "Serial1" (Pin0/1) ("Serial" is the USB Port)
+//You can program the Leonardo while connected to the panel - plus debug messages are sent down the USB to the PC
 #else
-//UNO etc (no Serial1)
+//UNO etc (no Serial1) "Serial" is (Pin0/1 and also wired to USB Port) 
+//Warning: This means you cannot program the UNO while RX/TX are connected
   #define Serial1 Serial
 #endif
 
-#define LED_Stat 13
+#define LED_Stat 13  //displays packets using LED 13
 
-
-const prog_uchar allmonths[] = {"JANFEBMARAPRMAYJUNJULAUGSEPOCTNOVDEC"};
-const prog_uchar alldays[] = {"SUNMONTUEWEDTHUFRISAT"};
+const char PROGMEM allmonths[] = {"JANFEBMARAPRMAYJUNJULAUGSEPOCTNOVDEC"};
+const char PROGMEM alldays[] = {"SUNMONTUEWEDTHUFRISAT"};
 
 String RKPClass::msKeyToSend="";
 bool RKPClass::dateFlash=true;
@@ -59,11 +50,6 @@ unsigned long RKPClass::timeToSwitchOffLed = 0;
 
 #define DISP_BUF_LEN 16+1+2		//16 characters - space - AW (will be followed by a Terminator 0)
 byte RKPClass::dispBuffer[DISP_BUF_LEN+1];
-
-
-//const char msgOff[] PROGMEM = "KeyPad OFF!";
-//const char msgOn[] PROGMEM = "KeyPad ON!";
-
 
 
 RKPClass::RKPClass()
@@ -148,8 +134,9 @@ bool RKPClass::loop_PanelMon()
 			byte idDev = (msgbuf[0] & 0xf0)>>4; //ID of remote that message is for 0x0-0xf are valid ids
 
 			//Uncomment to Display all packets
+                        #ifdef DISPLAY_ALL_PACKETS
 			Log(F("DevID:"));Log(idDev);LogLn(' ');LogHex(msgbuf,msgbufLen);
-
+                        #endif
 
 			byte cs = 0;
 			for(int n=0;n<msgbufLen;n++)
@@ -207,9 +194,9 @@ bool RKPClass::loop_PanelMon()
 void RKPClass::DisplayScreen( byte* msgbuf, int msgbufLen )
 {
 	byte bufix=0;
+
 	//Force Screen clear each time
-	//for(int m=0;m<DISP_BUF_LEN;m++)
-	//	dispBuffer[m]='!';
+	//for(int m=0;m<DISP_BUF_LEN;m++)dispBuffer[m]='!';
 
 	//Checksum so can see if changes and need update client
 	static int previousCS =-1;
@@ -249,13 +236,13 @@ void RKPClass::DisplayScreen( byte* msgbuf, int msgbufLen )
 			byte m1=(b3 & 0xf0)>>4; if(m1==0x0A) m1=0;
 			byte m2=(b3 & 0x0f); if(m2==0x0A) m2=0;
 
-			memcpy(dispBuffer+0,alldays+(day*3),3);
+			memcpy_P(dispBuffer+0,alldays+(day*3),3);
 			dispBuffer[3]=' ';
 			dispBuffer[4]=('0'+(int)(date/10));
 			dispBuffer[5]=('0'+(date%10));
 			dispBuffer[6]=' ';
 
-			memcpy(dispBuffer+7,allmonths+(nMonth*3),3);
+			memcpy_P(dispBuffer+7,allmonths+(nMonth*3),3);
 			dispBuffer[10]=' ';
 			dispBuffer[11]='0'+h1;
 			dispBuffer[12]='0'+h2;
@@ -341,6 +328,11 @@ void RKPClass::DisplayScreen( byte* msgbuf, int msgbufLen )
 		//SendDisplayToBrowser(); //Dont send immediately- SendDisplayToBrowser can take time
 		bScreenHasUpdated = true;
 	}
+
+  
+//LogLn("Screen:");LogHex((byte*)dispBuffer,DISP_BUF_LEN);
+//return;
+
 }
 
 char RKPClass::NextKeyPress()
@@ -380,21 +372,21 @@ void RKPClass::SendToPanel( int id, bool bAck )
 
 	if (bAck)	//change to if(true) to remove retries
 	{//LogLn("Ack");
-		char nKeyToSend = PopKeyPress();
-		if (nKeyToSend!=-1)
+		char nBrowserKeyPress = PopKeyPress();
+		if (nBrowserKeyPress!=-1)
 		{
 			//nKeyToSend &= 0x20; //tolower
 			int nNumb=0;
-			if (nKeyToSend >='1' && nKeyToSend <= '9')
-			nNumb = (nKeyToSend-'0');
-			else if (nKeyToSend == '0')	nNumb = 0x0a;
-			else if (nKeyToSend == 'f'||nKeyToSend == '*')	nNumb = 0x0b;	//UP  (* for IPhone)
-			else if (nKeyToSend == 'v'||nKeyToSend == '#')	nNumb = 0x0c;	//DOWN (# for IPhone)
-			else if (nKeyToSend == 'p')	nNumb = 0x0d;	//UP + DOWN (Panic)
-			else if (nKeyToSend == 'x'||nKeyToSend == ';'||nKeyToSend == 'n'||nKeyToSend == 'N')	nNumb = 0x0e;	//UP + 0 or X(reject) (WAIT on IPhone numpad)
-			else if (nKeyToSend == 13||nKeyToSend == '+'||nKeyToSend == 'y'||nKeyToSend == 'Y')	nNumb = 0x0f;	//UP + 0 or *(accept) (+ on IPhone numpad)
+			if (nBrowserKeyPress >='1' && nBrowserKeyPress <= '9')
+			nNumb = (nBrowserKeyPress-'0');
+			else if (nBrowserKeyPress == '0')	nNumb = 0x0a;
+			else if (nBrowserKeyPress == 'f'||nBrowserKeyPress == '*')	nNumb = 0x0b;	//UP  (* for IPhone)
+			else if (nBrowserKeyPress == 'v'||nBrowserKeyPress == '#')	nNumb = 0x0c;	//DOWN (# for IPhone)
+			else if (nBrowserKeyPress == 'p')	nNumb = 0x0d;	//UP + DOWN (Panic)
+			else if (nBrowserKeyPress == 'x'||nBrowserKeyPress == ';'||nBrowserKeyPress == 'n'||nBrowserKeyPress == 'N')	nNumb = 0x0e;	//UP + 0 or X(reject) (WAIT on IPhone numpad)
+			else if (nBrowserKeyPress == 13||nBrowserKeyPress == '+'||nBrowserKeyPress == 'y'||nBrowserKeyPress == 'Y')	nNumb = 0x0f;	//UP + 0 or *(accept) (+ on IPhone numpad)
 
-			Log(F("Sent: ")); LogHex(nNumb); LogHex(nKeyToSend); LogLn(F("."));
+			Log(F("Sent: ")); LogHex(nNumb); LogHex(nBrowserKeyPress); LogLn(F("."));
 
 			if(nNumb!=0)
 				h2 = nNumb<<4;
@@ -402,9 +394,8 @@ void RKPClass::SendToPanel( int id, bool bAck )
 		nH2Previous = h2;
 	}
 	else
-	{//If panel didnt get last kepress resend it - if 0xFF or 0 then its a resend but the default normal we would have sent anyway.
+	{//If panel didnt get last kepress, resend it - if 0xFF or 0 then its a resend but the default normal we would have sent anyway.
 		h2 = (nH2Previous == 0xFF)? 0 : nH2Previous;
-		//if (h2!=0)
 		{
 			Log(F("Resend: ("));
 			LogHex(h2);
