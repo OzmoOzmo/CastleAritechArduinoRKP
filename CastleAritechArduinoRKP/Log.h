@@ -28,8 +28,7 @@
 
 #ifndef QUIET
 
-
-	#define nSerialBaudDbg 19200
+	#define nSerialBaudDbg 115200
 
 	#define Log(x) Serial.print(x)
 	#define Log2(x,y) Serial.print(x,y)
@@ -49,6 +48,7 @@
 void LogHex(byte rx);
 void LogHex(char* s);
 void LogHex(byte* s , int len);
+void LogHex(byte* s , int len, bool noNL);
 
 void Log_Init();
 

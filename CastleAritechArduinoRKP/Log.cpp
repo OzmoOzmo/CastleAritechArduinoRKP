@@ -33,7 +33,7 @@ void LogBuf(char* t)
 {
 	int ix=0;
 	while(t[ix]!=0)
-	Log((char)t[ix++]);
+		Log((char)t[ix++]);
 	//LogLn(".");
 	LogLn("..");
 }
@@ -53,9 +53,13 @@ void LogHex(char* s)
 	}
 	//LogLn("{end}");
 }
+void LogHex(byte* s , int len, boolean noNL)
+{
+  LogHex(s,len);
+}
 void LogHex(byte* s , int len)
 {
-	const int l = 8;
+	const int l = 24;
 	for(int col=0;;col++)
 	{
 		if ((col*l) >= len)		//len=10 = 1*8
@@ -64,15 +68,23 @@ void LogHex(byte* s , int len)
 		{
 			if (r!=0) Log(' ');
 			int x = col*l+r;
-			byte c = (x<=len) ? s[col*l+r] : 0xFE;
-			if (c<16) Log('0'); Log2(c, HEX);
+			//byte c = (x<len) ? s[col*l+r] : 0x00;
+			//if (c<16) Log('0'); Log2(c, HEX);
+			if (x<len)
+			{
+				byte c = s[col*l+r];
+				if (c<16) Log('0'); Log2(c, HEX);
+			}
+			else
+				Log("--");
 		}
 		Log(':');
 		for(int r=0;r<l;r++)
 		{
 			int x = col*l+r;
-			byte c = (x<len) ? s[col*l+r] : ',';
-			if (c <= ' ' || c>= 128)
+			byte c = (x<len) ? (s[col*l+r]) : '#'; ///strip bit 7 (flash)
+                       
+			if (c <= ' ' || c>= 0x7F)
 			{Log('.');}		//brackets important
 			else
 			{Log((char)c);} //brackets important
@@ -91,11 +103,12 @@ void Log_Init()
 {
 #ifndef QUIET
 	Serial.begin(nSerialBaudDbg);
+        LogLn("Log Start");
 #endif
 }
 
 
-#ifndef QUIET
+#if FOR_DEBUG
 extern unsigned int __data_start;
 extern unsigned int __data_end;
 extern unsigned int __bss_start;

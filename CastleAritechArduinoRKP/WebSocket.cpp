@@ -16,7 +16,6 @@
 */
 
 #include "sha1.h"
-#include "Base64.h"
 #include "RKP.h"	//for nKeyToSend
 #include "LOG.h"
 #include "websocket.h"
@@ -77,7 +76,6 @@ void WebSocket::EtherPoll()
 {
 	// Should be called for each loop.
 	EthernetClient cli=ethServer.available();
-        //RKPClass::loop_PanelMon(); //most important we poll this or RKP will loose data
 
 	if (cli)
 	{
@@ -90,11 +88,9 @@ void WebSocket::EtherPoll()
 		}
 		else
 		{//Existing connection
-                        LogLn(F("existing"));
+			//LogLn(F("existing"));
 			if (WebSocket_getFrame() == false)
 			{//Request to end comms (rarely happens)
-				RKPClass::loop_PanelMon(); //most important we poll this or RKP will loose data
-
 				//Got bad frame, disconnect
 				Log(F("Disconnect{"));
 				while(ethClient.available()>0)
@@ -127,10 +123,7 @@ void WebSocket::SendHTMLSite(/*EthernetClient& cli*/)
 		//	ethClient.print(F("button"));
 		//else
 		ethClient.print(c);
-		if (n%100==0)
-			RKPClass::loop_PanelMon(); //most important we poll this when doing other stuff or RKP will loose data
 	}
-	RKPClass::loop_PanelMon(); //most important we poll this or RKP will loose data
 
 	// close the connection so browser gets data
 	ethClient.flush();
@@ -141,33 +134,30 @@ void WebSocket::SendHTMLSite(/*EthernetClient& cli*/)
 
 
 // Create a Websocket server
-void WebSocket::WebSocket_EtherInit( IPAddress ip, IPAddress gateway )
+void WebSocket::WebSocket_EtherInit()
 {
-	//IPAddress ip( 192, 168, 1 , 205);			//Give the device a unique IP
-	//IPAddress gateway( 192, 168, 1, 1 );	//Gateway (the Router)
+	IPAddress ip( IP_A, IP_B, IP_C, IP_D);	    //Give the device a unique IP
+	IPAddress gateway( IP_A, IP_B, IP_C, 1 );   //Gateway (youre Router)
+	IPAddress subnet( 255, 255, 255, 0 );	    //typically dont need change
 
-	IPAddress subnet( 255, 255, 255, 0 );	//typically dont need change
 	// this sequence must be unique on your lan
 	byte mac[] = { 0x90, 0xA2, 0xDA, 0x00, 0x59, 0x67 };	//typically dont need change
 
-
 	//Start Ethernet
-	Ethernet.begin(mac, ip, gateway, subnet);
+	Ethernet.begin(mac, ip/*, gateway, subnet*/);
 
 	ethServer.begin();
+        delay(1000); // Settle time
 	Log(F("server is at ")); LogLn(Ethernet.localIP());
-
-	delay(150); // Settle time
 }
 
 //Send something to connected browser
 bool WebSocket::WebSocket_send(char* data, byte length)
 {
-//]  LogLn("Sending Screen");LogHex((byte*)data,length);
-  
+	//  LogLn("Sending Screen");LogHex((byte*)data,length);
 	if (!ethClient.connected())
 	{
-		LogLn(F("No Client."));
+		//LogLn(F("No Client."));
 		return false;
 	}
 	//int length = strlen(data);
@@ -184,15 +174,68 @@ bool WebSocket::WebSocket_send(char* data, byte length)
 	for (int i=0; i<length; ++i)
 		ethClient.write(data[i]);
 
-	//]LogLn(F("Sent OK."));
+	//LogLn(F("Sent OK."));
 	return true;
 }
+//used by base64
+inline void WebSocket::a3_to_a4(unsigned char * a4, unsigned char * a3) {
+	a4[0] = (a3[0] & 0xfc) >> 2;
+	a4[1] = ((a3[0] & 0x03) << 4) + ((a3[1] & 0xf0) >> 4);
+	a4[2] = ((a3[1] & 0x0f) << 2) + ((a3[2] & 0xc0) >> 6);
+	a4[3] = (a3[2] & 0x3f);
+}
+
+int WebSocket::base64_encode(char *output, char *input, int inputLen)
+{
+	int i = 0, j = 0;
+	int encLen = 0;
+	unsigned char a3[3];
+	unsigned char a4[4];
+
+        static char b64_alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+		"abcdefghijklmnopqrstuvwxyz"
+		"0123456789+/";
+
+	while(inputLen--) {
+		a3[i++] = *(input++);
+		if(i == 3) {
+			a3_to_a4(a4, a3);
+
+			for(i = 0; i < 4; i++) {
+				output[encLen++] = b64_alphabet[a4[i]];
+			}
+
+			i = 0;
+		}
+	}
+
+	if(i) {
+		for(j = i; j < 3; j++) {
+			a3[j] = '\0';
+		}
+
+		a3_to_a4(a4, a3);
+
+		for(j = 0; j < i + 1; j++) {
+			output[encLen++] = b64_alphabet[a4[j]];
+		}
+
+		while((i++ < 3)) {
+			output[encLen++] = '=';
+		}
+	}
+	output[encLen] = '\0';
+	return encLen;
+}
+
+
+char WebSocket::htmlline[128];	//There are 3 buffers needed - htmlline, key and sha - sha and htmlline share the same temp buffer
+char WebSocket::key[80];        //this cannot use htmlline also
+
 
 void WebSocket::WebSocket_doHandshake()
 {
 	LogLn("HS");
-	char htmlline[128];	//TODO: there are 3 buffers used - htmlline, key and sha - maybe could merge them
-	char key[80];
 
 	bool hasKey = false;
 	bool bReqWebPage = false;
@@ -204,11 +247,11 @@ void WebSocket::WebSocket_doHandshake()
                 //TODO: ignore any lines not starting with Sec-WebSocket-Key: if (counter.length==18){}
 
 		byte bite = ethClient.read();
-		//Log(bite);
+		//Log((char)bite); LogLn("");
 		htmlline[counter++] = bite;
 		if (counter > (127))
 		{
-			LogLn(F("HandShake Overflow{"));
+			Log(F("HandShake Overflow{"));
 			while(ethClient.available()>0)
 				LogHex(ethClient.read());
 			LogLn(F("}"));
@@ -223,6 +266,7 @@ void WebSocket::WebSocket_doHandshake()
 			bool bFound = (strstr_P(htmlline, PSTR("Sec-WebSocket-Key:")) != NULL);
 			if (bFound)
 			{
+				//Log(">");LogLn(htmlline);
 				hasKey = true;
 				strtok(htmlline, " ");
 				strcpy(key, strtok(NULL, " "));	//TODO: Not safe - need specify max 80 limit
@@ -235,9 +279,6 @@ void WebSocket::WebSocket_doHandshake()
 			}
 
 			counter = 0; // Start saving new header string
-
-			//Each Line - check if there is any comms to do
-			RKPClass::loop_PanelMon(); //most important we poll this or RKP will loose data
 		}
 	}
 
@@ -258,7 +299,7 @@ void WebSocket::WebSocket_doHandshake()
 		ethClient.print(htmlline);  //eg. VoNhf1LMVVTziHWxjiajVem5DB4=
 		ethClient.print(F("\r\n\r\n"));
 
-		LogLn(F("Connected"));
+		//LogLn(F("Connected"));
 
 		//Send any display we might have
 		RKPClass::bScreenHasUpdated = true; //RKPClass::SendDisplayToBrowser();
@@ -337,7 +378,7 @@ bool WebSocket::WebSocket_getFrame()
 	if (!frame.isFinal)
 	{	// We don't handle fragments! Close and disconnect.
 		LogLn(F("Unsurp"));
-		return false; //RejectBroswerMsg();
+		return false;
 	}
 
 	if (frame.opcode== 0x01)
