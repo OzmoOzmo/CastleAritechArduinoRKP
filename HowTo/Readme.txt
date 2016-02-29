@@ -3,7 +3,8 @@
 Note: Updated to Compiles using the latest Arduino IDE 1.6.x from "Arduino.cc"
 
 
-See http://www.boards.ie/vbulletin/showthread.php?p=88215184 for the details...
+See http://www.instructables.com/id/House-Alarm-Internet-Dialer-With-Arduino-Reverse-E/
+for the details...
 
 
 Basically this allows you to access an Aritech Alarm from a mobile phone by emulating one of its keypads using an arduino.

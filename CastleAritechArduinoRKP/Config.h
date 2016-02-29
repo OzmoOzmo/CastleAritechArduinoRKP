@@ -31,6 +31,7 @@
 //The IPPort for the server to listen on
 #define IP_P 8383
 
+//#define SENDEMAILS 1      //Define this to enable sending emails - Comment line out to disable sending emails (default setting = send no emails)
 
 #define EMAIL_ADDR "?????????@gmail.com"  //Email to send to
 
@@ -45,7 +46,6 @@
 //Build Version (displayed on webpage)
 #define sVersion "V4.00"
 
-#define SENDEMAILS 1      //Define this to enable sending emails - Comment line out to disable sending emails
 
 
 //The Email server
