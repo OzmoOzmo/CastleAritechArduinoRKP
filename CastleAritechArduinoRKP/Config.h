@@ -1,4 +1,3 @@
-@@ -1,79 +0,0 @@
 /*
  * Config.h
  *
@@ -25,7 +24,7 @@
 #define RKP_ID 1  //This is the Keypad id of the Arduinio - recommended 1 or 2 (0 is first keypad)
 
 //The Arduino IP address and Port
-//Here - the default settings are to use:  http://192.168.0.205:8383
+//Here - the default settings are to use:  http://192.168.1.205:8383
 #define IP_A 192
 #define IP_B 168
 #define IP_C 1

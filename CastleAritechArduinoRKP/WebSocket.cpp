@@ -54,7 +54,7 @@ const char htmlSite[] PROGMEM=
 "<meta name='viewport' content='width=320, initial-scale=1.8, user-scalable=no'>" //"no" as screen unzooms when press button
 "<style>.long{height: 64px;} button{height: 35px;width: 35px;}</style>"
 "</head><body>"
-"<div style='border: 5px solid black; width: 180px;'>&nbsp;<div id=msg1 style='float:left'>%</div><div id=msg2 style='float:right'>%</div></div>"
+"<div style='border: 5px solid black; width: 180px;'>&nbsp;<div id=msg1 style='float:left'> </div><div id=msg2 style='float:right'> </div></div>"
 "<table id='table'>"
 "<tr><td><button>1</button></td><td><button>2</button></td><td><button>3</button></td><td rowspan=2><button class=long>Y</button></td></tr>"
 "<tr><td><button>4</button></td><td><button>5</button></td><td><button>6</button></td></tr>"
