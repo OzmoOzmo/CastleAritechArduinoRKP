@@ -4,7 +4,7 @@ CastleAritechArduinoRKP
 An Aritech Alarm compatible Remote Keypad that makes Alarm functions
 accessible via any desktop or modern mobile phone browser.
 
-![animation demo](http://www.boards.ie/vbulletin/attachment.php?attachmentid=302051)
+![animation demo](https://github.com/OzmoOzmo/CastleAritechArduinoRKP/blob/d3811089084ef876fd581825e4229804a5692861/HowTo/ArduinoAritechInternetKeypadLoop.gif?raw=true)
 
 Allows you to remote arm/disarm the panel as well as view logs etc.
 Also Emails you when an Alarm happens.
@@ -19,5 +19,7 @@ No libraries are required.
 
 
 The circuit required is in the HowTo Notes Folder.
+
+Ive put a step by step guide on Instructables [here (Link..)](http://www.instructables.com/id/House-Alarm-Internet-Dialer-With-Arduino-Reverse-E/).
 
 April 2015
