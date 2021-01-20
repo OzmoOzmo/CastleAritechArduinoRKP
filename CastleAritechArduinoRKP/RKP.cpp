@@ -396,7 +396,7 @@ void RKPClass::DecodeScreen( byte* msgbuf, int msgbufLen )
 			bufix=0;
 		}
 		else if (rx == 0x90)
-		{//CLS
+		{//Clear screen
 			bufix=0;
 			for(int m=0;m<DISP_BUF_LEN;m++)
 				dispBuffer[m]=' ';
@@ -433,7 +433,7 @@ void RKPClass::DecodeScreen( byte* msgbuf, int msgbufLen )
 
 			char c=0;
 			if (i==4)	c= '*';
-			else if (i==5)	c= '#';
+			else if (i==5)	c= 'V';
 			else if (i==7)	c= '>';
 
 			if (c>0)
@@ -552,16 +552,17 @@ void RKPClass::SendToPanel( bool bAck )
 		{
 			//nKeyToSend &= 0x20; //tolower
 			int nNumb=0;
+      nBrowserKeyPress = tolower(nBrowserKeyPress);
 			if (nBrowserKeyPress >='1' && nBrowserKeyPress <= '9')
-			nNumb = (nBrowserKeyPress-'0');
+        nNumb = (nBrowserKeyPress-'0');
 			else if (nBrowserKeyPress == '0')	nNumb = 0x0a;
 			else if (nBrowserKeyPress == 'f'||nBrowserKeyPress == '*')	nNumb = 0x0b;	//UP  (* for IPhone)
 			else if (nBrowserKeyPress == 'v'||nBrowserKeyPress == '#')	nNumb = 0x0c;	//DOWN (# for IPhone)
 			else if (nBrowserKeyPress == 'p')	nNumb = 0x0d;	//UP + DOWN (Panic)
-			else if (nBrowserKeyPress == 'x'||nBrowserKeyPress == ';'||nBrowserKeyPress == 'n'||nBrowserKeyPress == 'N')	nNumb = 0x0e;	//UP + 0 or X(reject) (WAIT on IPhone numpad)
-			else if (nBrowserKeyPress == 13||nBrowserKeyPress == '+'||nBrowserKeyPress == 'y'||nBrowserKeyPress == 'Y')	nNumb = 0x0f;	//UP + 0 or *(accept) (+ on IPhone numpad)
+			else if (nBrowserKeyPress == 'x'||nBrowserKeyPress == ';'||nBrowserKeyPress == 'n')	nNumb = 0x0e;	//UP + 0 or X(reject) (WAIT on IPhone numpad)
+			else if (nBrowserKeyPress == 13||nBrowserKeyPress == '+'||nBrowserKeyPress == 'y')	nNumb = 0x0f;	//UP + 0 or *(accept) (+ on IPhone numpad)
 
-			Log(F("Sent: ")); LogHex(nNumb); LogHex(nBrowserKeyPress); LogLn(F("."));
+			//]Log(F("Rec: ")); LogHex(nNumb); LogHex(nBrowserKeyPress); LogLn(F("."));
 
 			if(nNumb!=0)
 				h2 = nNumb<<4;
@@ -589,5 +590,3 @@ void RKPClass::SendToPanel( bool bAck )
 
 	//Log("Send>");LogHex(h1); LogHex(h2); LogHex(h3); LogHex(h4); LogLn(".");
 }
-
-

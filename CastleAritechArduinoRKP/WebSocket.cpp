@@ -36,40 +36,46 @@
   //#include <util.h>
 #endif
 
+#define STR_HELPER(x) #x
+#define STR(x) STR_HELPER(x)
 
 //--Sockets
 //use this as password - pick random port - set code tamper on alarm also.
 EthernetServer ethServer = EthernetServer(IP_P);
 EthernetClient ethClient;
 
+//Symbols as displayed on the HTML page
+#define KEY_STAR "&#9650;"  //unicode arrow up "*"
+#define KEY_POUND "&#9660;" //unicode arrow down "#"
 
-//"*" will be replaced with button
 const char htmlSite[] PROGMEM=
-//"<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Transitional//EN'>"
 "<!DOCTYPE html>"
 "<html><head><title>Castle</title>"
-"<meta name='viewport' content='width=320, initial-scale=1.2, user-scalable=no'>"
+"<meta name='viewport' content='width=320, initial-scale=1.8, user-scalable=no'>" //"no" as screen unzooms when press button
 "<style>.long{height: 64px;} button{height: 35px;width: 35px;}</style>"
-"<script src='http://goo.gl/m3GB3M' type='text/javascript'></script>"
 "</head><body>"
-"<div style='border: 5px solid black; width: 180px;'>&nbsp;<div id=msg1 style='float:left'></div><div id=msg2 style='float:right'></div></div>"
-"<table>"
+"<div style='border: 5px solid black; width: 180px;'>&nbsp;<div id=msg1 style='float:left'>%</div><div id=msg2 style='float:right'>%</div></div>"
+"<table id='table'>"
 "<tr><td><button>1</button></td><td><button>2</button></td><td><button>3</button></td><td rowspan=2><button class=long>Y</button></td></tr>"
 "<tr><td><button>4</button></td><td><button>5</button></td><td><button>6</button></td></tr>"
 "<tr><td><button>7</button></td><td><button>8</button></td><td><button>9</button></td><td rowspan=2><button class=long>N</button></td></tr>"
-"<tr><td><button>*</button></td><td><button>0</button></td><td><button>#</button></td></tr>"
+"<tr><td><button value='*'>" KEY_STAR "</button></td><td><button>0</button></td><td><button value='#'>" KEY_POUND "</button></td></tr>"
 "</table>"
-"<script>var ws;$(document).ready(function(){"
+"<script defer>var ws;"
+"function ge(x){return document.getElementById(x);}\n"
+"function st(x,y){ge('msg1').innerText=x;ge('msg2').innerText=y?y:' ';}\n"
 "try{"
-	"ws = new WebSocket('ws://'+location.hostname+':8383/sock/');"
-	"ws.onmessage = function (evt) {var d=evt.data.split('|');$('#msg1').text(d[0]);$('#msg2').text(d[1]);};"
-	"ws.onerror = function (evt) {$('#msg').append('ERR:' + evt.data);};"
-	"ws.onclose = function (evt) {$('#msg').text('Closed');};"
-	"ws.onopen = function () { };"
-"} catch (ex) {alert(ex.message);}"
-"$(document).keypress(function (e) {ws.send(e.which);});"
-"$(':button').click(function (e) { ws.send(e.target.innerText.charCodeAt(0));});"
-"});</script></body></html>";
+"ws = new WebSocket('ws://'+location.hostname+':" STR(IP_P) "/sock/');"
+"ws.onmessage = function(evt){var d=evt.data.split('|');st(d[0],d[1]);}\n"
+"ws.onerror = function(evt){st('ERR:' + evt.data,'');}\n"
+"ws.onclose = function(evt){st('Connection Closed','');}\n"
+//"ws.onopen = function(){ws.send('r');}\n"
+//pc keyboard support
+"document.body.onkeydown = function(e){ws.send(String.fromCharCode(e.keyCode));}\n"
+//buttons on html
+"ge('table').onclick = function(e){ws.send(e.target.value || e.target.innerText);}\n"
+"} catch(ex) {alert(ex.message);}\n"
+"</script></body></html>";
 
 
 void WebSocket::EtherPoll()
@@ -100,6 +106,10 @@ void WebSocket::EtherPoll()
 			}
 		}
 	}
+
+  //static int n=0;
+  //if (n++ % 1000 == 0)
+  //  LogLn(Ethernet.localIP());
 
 }
 
@@ -244,16 +254,16 @@ void WebSocket::WebSocket_doHandshake()
 
 	while(ethClient.available()>0)
 	{//Read each line
-                //TODO: ignore any lines not starting with Sec-WebSocket-Key: if (counter.length==18){}
+    //ignore any lines not starting with Sec-WebSocket-Key: if (counter.length==18){}
 
 		byte bite = ethClient.read();
 		//Log((char)bite); LogLn("");
 		htmlline[counter++] = bite;
 		if (counter > (127))
 		{
-			Log(F("HandShake Overflow{"));
-			while(ethClient.available()>0)
-				LogHex(ethClient.read());
+			Log(F("Line too long{"));
+			htmlline[counter - 1] = 0; // Terminate string before CRLF
+      Log("Ignoring> ");LogLn(htmlline);
 			LogLn(F("}"));
 			counter=0;
 			continue;
@@ -263,15 +273,19 @@ void WebSocket::WebSocket_doHandshake()
 		{ // Parse the line
 			htmlline[counter - 2] = 0; // Terminate string before CRLF
 
+      //Log("req> "); LogLn(htmlline);
+      //request for websocket handover
 			bool bFound = (strstr_P(htmlline, PSTR("Sec-WebSocket-Key:")) != NULL);
 			if (bFound)
 			{
-				//Log(">");LogLn(htmlline);
+        //Log("Found>");LogLn(htmlline);
 				hasKey = true;
 				strtok(htmlline, " ");
-				strcpy(key, strtok(NULL, " "));	//TODO: Not safe - need specify max 80 limit
+				strcpy(key, strtok(NULL, " "));	//TODO: should specify max 80 limit
+        Log("Found> ");LogLn(key);
 			}
 
+      //request for HTTP page
 			if (strstr_P(htmlline, PSTR("GET / HTTP")) != NULL)
 			{
 				LogLn(F("Page Req"));
@@ -385,7 +399,7 @@ bool WebSocket::WebSocket_getFrame()
 	{// Txt frame
 		Log(F("Data: ")); //Got Data
 		LogLn(frame.data);
-		RKPClass::PushKey(atoi(frame.data));
+		RKPClass::PushKey(frame.data[0]);
 		return true;
 	}
 
@@ -401,5 +415,3 @@ bool WebSocket::WebSocket_getFrame()
 	LogLn(F("Ex.")); //Unhandled frame ignored
 	return false;
 }
-
-
